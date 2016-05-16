@@ -53,6 +53,28 @@
 
           sh './autogen.sh' if File.exists? 'autogen.sh'
           sh './configure', '--disable-shared', '--enable-static', *host
+
+          # use config.log to determine the library we need here
+          have_clock_gettime = false
+          clock_gettime_library = nil
+
+          File.foreach 'config.log' do |line|
+            have_clock_gettime = true if /^ac_cv_func_clock_gettime=yes/ =~ line
+
+            if /^ac_cv_search_clock_gettime=(.*)/ =~ line then
+              next if $1 == 'no'
+              next if $1 == "'none required'"
+
+              /^-l/ =~ $1
+
+              clock_gettime_library = $'
+            end
+          end
+
+          $stderr.puts "Adding -l#{clock_gettime_library}" if Rake.application.options.trace
+
+          linker.libraries << clock_gettime_library if
+            have_clock_gettime and clock_gettime_library
         else
           sh 'cmd /c "copy /Y win32 > NUL"'
           cp 'Makefile.mingw', 'Makefile'
