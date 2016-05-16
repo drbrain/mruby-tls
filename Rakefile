@@ -16,13 +16,17 @@ def mruby_rake *tasks
       'MRUBY_CONFIG' => BUILD_CONFIG_FILE,
     }
 
-    $stderr.puts "minirake #{tasks.join ' '}" if Rake.application.options.trace
+    if Rake.application.options.trace then
+      $stderr.puts "minirake #{tasks.join ' '}"
 
-    pid = Process.spawn env, 'ruby', 'minirake', *tasks
+      env['RAKEOPT'] = '-t'
+    end
+
+    pid = Process.spawn env, 'rake', *tasks
 
     Process.wait pid
 
-    fail 'mruby exited non-zero' unless $?.success?
+    raise 'mruby exited non-zero' unless $?.success?
   end
 end
 
