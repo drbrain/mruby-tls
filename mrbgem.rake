@@ -54,6 +54,16 @@
           sh './autogen.sh' if File.exists? 'autogen.sh'
           sh './configure', '--disable-shared', '--enable-static', *host
 
+        else
+          sh 'cmd /c "copy /Y win32 > NUL"'
+          cp 'Makefile.mingw', 'Makefile'
+        end
+      end
+    end
+
+    task set_libressl_linker_flags: libressl_makefile do
+      if ENV['OS'] != 'Windows_NT' then
+        cd libressl_dir do
           # use config.log to determine the library we need here
           have_clock_gettime = false
           clock_gettime_library = nil
@@ -75,16 +85,13 @@
 
           linker.libraries << clock_gettime_library if
             have_clock_gettime and clock_gettime_library
-        else
-          sh 'cmd /c "copy /Y win32 > NUL"'
-          cp 'Makefile.mingw', 'Makefile'
         end
       end
     end
 
     # this is a task not a file so the libmruby_a dependencies are updated
     # correctly every time
-    task libtls_lib => [header, libressl_makefile] do
+    task libtls_lib => [header, libressl_makefile, :set_libressl_linker_flags] do
       cd libressl_dir do
         sh 'make'
       end
